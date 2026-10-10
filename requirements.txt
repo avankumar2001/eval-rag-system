@@ -1,7 +1,7 @@
 streamlit
 langchain
 langchain-groq
-langchain-community
+langchain-community<0.4.2
 langchain-chroma
 langchain-huggingface
 chromadb
