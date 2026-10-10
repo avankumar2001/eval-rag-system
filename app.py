@@ -35,7 +35,7 @@ os.environ["GROQ_API_KEY"] = groq_api_key
 @st.cache_resource
 def load_models():
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    llm = ChatGroq(model="llama3-70b-8192", temperature=0)
+    llm =ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
     return embeddings, llm
 
 embeddings, llm = load_models()
