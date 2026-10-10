@@ -10,3 +10,4 @@ sentence-transformers
 ragas
 datasets
 tiktoken
+langchain-google-vertexai
