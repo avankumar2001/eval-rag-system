@@ -52,12 +52,12 @@ if uploaded_file is not None:
     with st.spinner("Processing PDF..."):
         loader = PyPDFLoader("temp.pdf")
         documents = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = text_splitter.split_documents(documents)
         
         # Create Vector Store
         vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
-        retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
+        retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 6, "fetch_k": 20})
         
     st.success(f"✅ PDF Processed! {len(chunks)} chunks created.")
 
