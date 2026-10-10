@@ -1,0 +1,11 @@
+streamlit
+langchain
+langchain-groq
+langchain-community
+langchain-huggingface
+chromadb
+pypdf
+sentence-transformers
+ragas
+datasets
+tiktoken
