@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from langchain_groq import ChatGroq
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -31,11 +31,11 @@ if not groq_api_key:
 
 os.environ["GROQ_API_KEY"] = groq_api_key
 
-# --- CACHED FUNCTIONS (To speed up the app) ---
+# --- CACHED FUNCTIONS ---
 @st.cache_resource
 def load_models():
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0)
+    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
     return embeddings, llm
 
 embeddings, llm = load_models()
@@ -44,18 +44,17 @@ embeddings, llm = load_models()
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
 if uploaded_file is not None:
-    # Save file temporarily
     with open("temp.pdf", "wb") as f:
         f.write(uploaded_file.getbuffer())
     
-    # Load and Chunk
     with st.spinner("Processing PDF..."):
-        loader = PyPDFLoader("temp.pdf")
+        # Switched to PyMuPDFLoader for better table extraction
+        loader = PyMuPDFLoader("temp.pdf")
         documents = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        # Increased chunk size to keep tables together
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
         chunks = text_splitter.split_documents(documents)
         
-        # Create Vector Store
         vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
         retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 6, "fetch_k": 20})
         
@@ -100,28 +99,32 @@ if uploaded_file is not None:
         
         if st.button("Run Evaluation"):
             with st.spinner("Generating test set and evaluating... This takes ~1 minute."):
+                from ragas.testset import TestsetGenerator
+                from ragas.llms import LangchainLLMWrapper
+                from ragas.embeddings import LangchainEmbeddingsWrapper
                 
-                test_questions = [
-                    "What is the main topic of the document?",
-                    "What methodology was used?",
-                    "What were the key results?",
-                    "What are the limitations mentioned?",
-                    "What is the conclusion?"
-                ]
+                ragas_llm = LangchainLLMWrapper(llm)
+                ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
+                
+                generator = TestsetGenerator(llm=ragas_llm, embedding_model=ragas_embeddings)
+                dataset = generator.generate_with_langchain_docs(chunks[:10], test_size=5) 
+                
+                test_df = dataset.to_pandas()
+                
+                questions = test_df["question"].tolist()
+                ground_truths = test_df["ground_truth"].tolist()
                 
                 answers = []
                 contexts = []
                 
-                for q in test_questions:
+                for q in questions:
                     ans = rag_chain.invoke(q)
                     answers.append(ans)
                     docs = retriever.invoke(q)
                     contexts.append([d.page_content for d in docs])
                 
-                ground_truths = ["Refer to the document for the answer."] * 5
-                
                 data = {
-                    "question": test_questions,
+                    "question": questions,
                     "answer": answers,
                     "contexts": contexts,
                     "ground_truth": ground_truths
@@ -135,4 +138,3 @@ if uploaded_file is not None:
                 
                 st.success("✅ Evaluation Complete!")
                 st.dataframe(result.to_pandas())
-                st.info("Faithfulness measures if the answer is derived ONLY from the context (no hallucinations).")
