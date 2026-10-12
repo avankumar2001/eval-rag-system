@@ -111,8 +111,26 @@ if uploaded_file is not None:
                 
                 test_df = dataset.to_pandas()
                 
-                questions = test_df["question"].tolist()
-                ground_truths = test_df["ground_truth"].tolist()
+                # DEBUG: Print the actual column names so you can see them
+                st.write("**Columns in generated test set:**", test_df.columns.tolist())
+                st.dataframe(test_df.head())
+                
+                # Dynamically find the correct column names (fixes KeyError)
+                question_col = None
+                ground_truth_col = None
+                
+                for col in test_df.columns:
+                    if "question" in col.lower() or "user_input" in col.lower():
+                        question_col = col
+                    if "ground_truth" in col.lower() or "reference" in col.lower():
+                        ground_truth_col = col
+                
+                if question_col is None or ground_truth_col is None:
+                    st.error(f"Could not find question/ground_truth columns. Found: {test_df.columns.tolist()}")
+                    st.stop()
+                
+                questions = test_df[question_col].tolist()
+                ground_truths = test_df[ground_truth_col].tolist()
                 
                 answers = []
                 contexts = []
