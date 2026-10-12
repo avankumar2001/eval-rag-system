@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 from langchain_groq import ChatGroq
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -93,7 +94,7 @@ if uploaded_file is not None:
 
     with tab2:
         st.markdown("### Run Automated Evaluation (Ragas)")
-        st.markdown("This will generate 5 test questions from your PDF and evaluate the RAG pipeline.")
+        st.markdown("This will generate 3 test questions from your PDF and evaluate the RAG pipeline.")
         
         if st.button("Run Evaluation"):
             with st.spinner("Generating test set and evaluating... This takes ~1 minute."):
@@ -105,7 +106,7 @@ if uploaded_file is not None:
                 ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
                 
                 generator = TestsetGenerator(llm=ragas_llm, embedding_model=ragas_embeddings)
-                dataset = generator.generate_with_langchain_docs(chunks[:10], testset_size=5) 
+                dataset = generator.generate_with_langchain_docs(chunks[:10], testset_size=3) 
                 
                 test_df = dataset.to_pandas()
                 
@@ -136,6 +137,7 @@ if uploaded_file is not None:
                     answers.append(ans)
                     docs = retriever.invoke(q)
                     contexts.append([d.page_content for d in docs])
+                    time.sleep(5)  # Pause for 5 seconds to avoid rate limits
                 
                 data = {
                     "question": questions,
