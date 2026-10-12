@@ -48,10 +48,8 @@ if uploaded_file is not None:
         f.write(uploaded_file.getbuffer())
     
     with st.spinner("Processing PDF..."):
-        # Switched to PyMuPDFLoader for better table extraction
         loader = PyMuPDFLoader("temp.pdf")
         documents = loader.load()
-        # Increased chunk size to keep tables together
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
         chunks = text_splitter.split_documents(documents)
         
@@ -111,11 +109,9 @@ if uploaded_file is not None:
                 
                 test_df = dataset.to_pandas()
                 
-                # DEBUG: Print the actual column names so you can see them
                 st.write("**Columns in generated test set:**", test_df.columns.tolist())
                 st.dataframe(test_df.head())
                 
-                # Dynamically find the correct column names (fixes KeyError)
                 question_col = None
                 ground_truth_col = None
                 
@@ -152,6 +148,8 @@ if uploaded_file is not None:
                 result = evaluate(
                     dataset=eval_dataset,
                     metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+                    llm=ragas_llm,
+                    embeddings=ragas_embeddings,
                 )
                 
                 st.success("✅ Evaluation Complete!")
