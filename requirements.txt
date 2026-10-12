@@ -11,3 +11,4 @@ ragas
 datasets
 tiktoken
 langchain-google-vertexai
+rapidfuzz
