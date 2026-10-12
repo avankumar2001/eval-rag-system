@@ -107,7 +107,7 @@ if uploaded_file is not None:
                 ragas_embeddings = LangchainEmbeddingsWrapper(embeddings)
                 
                 generator = TestsetGenerator(llm=ragas_llm, embedding_model=ragas_embeddings)
-                dataset = generator.generate_with_langchain_docs(chunks[:10], test_size=5) 
+                dataset = generator.generate_with_langchain_docs(chunks[:10], testset_size=5) 
                 
                 test_df = dataset.to_pandas()
                 
