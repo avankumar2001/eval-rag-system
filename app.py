@@ -36,7 +36,7 @@ os.environ["GROQ_API_KEY"] = groq_api_key
 @st.cache_resource
 def load_models():
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    llm = ChatGroq(model="openai/gpt-oss-120b", temperature=0)
+    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
     return embeddings, llm
 
 embeddings, llm = load_models()
@@ -55,7 +55,7 @@ if uploaded_file is not None:
         chunks = text_splitter.split_documents(documents)
         
         vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
-        retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 6, "fetch_k": 20})
+        retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 2, "fetch_k": 10})
         
     st.success(f"✅ PDF Processed! {len(chunks)} chunks created.")
 
@@ -122,7 +122,7 @@ if uploaded_file is not None:
                     answers.append(ans)
                     docs = retriever.invoke(q)
                     contexts.append([d.page_content for d in docs])
-                    time.sleep(8)  # Sleep to avoid Groq rate limits
+                    time.sleep(30)  # Sleep to avoid Groq rate limits
                 
                 data = {
                     "question": questions,
