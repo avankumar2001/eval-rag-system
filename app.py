@@ -36,7 +36,7 @@ os.environ["GROQ_API_KEY"] = groq_api_key
 @st.cache_resource
 def load_models():
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+    llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0)
     return embeddings, llm
 
 embeddings, llm = load_models()
@@ -55,7 +55,7 @@ if uploaded_file is not None:
         chunks = text_splitter.split_documents(documents)
         
         vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
-        retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 2, "fetch_k": 10})
+        retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5})
         
     st.success(f"✅ PDF Processed! {len(chunks)} chunks created.")
 
@@ -94,24 +94,22 @@ if uploaded_file is not None:
 
     with tab2:
         st.markdown("### Run Automated Evaluation (Ragas)")
-        st.markdown("This uses a pre-built **golden dataset** of 3 questions and ground truths to evaluate the RAG pipeline.")
+        st.markdown("This uses a pre-built **golden dataset** of 2 questions and ground truths to evaluate the RAG pipeline.")
         
         if st.button("Run Evaluation"):
             with st.spinner("Running RAG chain and evaluating with Ragas... This takes ~2 minutes."):
                 from ragas.llms import LangchainLLMWrapper
                 from ragas.embeddings import LangchainEmbeddingsWrapper
                 
-                # Golden Dataset (hand-crafted from the sample_paper.pdf)
+                # Golden Dataset (2 questions to stay under rate limits)
                 questions = [
                     "What is the BLEU score of the Transformer model on the English-to-German translation task?",
-                    "How many attention heads are used in the base Transformer model?",
-                    "What optimizer was used to train the Transformer?"
+                    "How many attention heads are used in the base Transformer model?"
                 ]
                 
                 ground_truths = [
                     "The Transformer achieves a BLEU score of 28.4 on the WMT 2014 English-to-German translation task.",
-                    "The base Transformer model uses 8 parallel attention heads.",
-                    "The Adam optimizer was used with specific hyperparameters (beta1 = 0.9, beta2 = 0.98, epsilon = 1e-9)."
+                    "The base Transformer model uses 8 parallel attention heads."
                 ]
                 
                 answers = []
@@ -122,7 +120,7 @@ if uploaded_file is not None:
                     answers.append(ans)
                     docs = retriever.invoke(q)
                     contexts.append([d.page_content for d in docs])
-                    time.sleep(30)  # Sleep to avoid Groq rate limits
+                    time.sleep(15)  # Sleep 15 seconds between questions to avoid rate limits
                 
                 data = {
                     "question": questions,
