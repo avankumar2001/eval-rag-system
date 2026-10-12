@@ -5,7 +5,7 @@ langchain-community<0.4.2
 langchain-chroma
 langchain-huggingface
 chromadb
-pypdf
+pymupdf
 sentence-transformers
 ragas
 datasets
